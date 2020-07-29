@@ -1,23 +1,22 @@
 package com.teamhive.capacitor;
 
-import com.getcapacitor.JSArray;
-import com.getcapacitor.JSObject;
-import com.getcapacitor.NativePlugin;
-import com.getcapacitor.Plugin;
-import com.getcapacitor.PluginCall;
-import com.getcapacitor.PluginMethod;
-
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
+import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds;
+import com.getcapacitor.*;
+import com.teamhive.capacitor.contentQuery.ContentQuery;
+import com.teamhive.capacitor.contentQuery.ContentQueryService;
+import com.teamhive.capacitor.utils.Utils;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @NativePlugin(
-    permissions={ Manifest.permission.READ_CONTACTS },
+    permissions = {Manifest.permission.READ_CONTACTS},
     requestCodes = {
         ContactPicker.REQUEST_OPEN_CODE,
         ContactPicker.REQUEST_FETCH_CODE,
@@ -25,19 +24,18 @@ import java.util.Map;
     }
 )
 public class ContactPicker extends Plugin {
+
     // Request codes
     protected static final int REQUEST_OPEN_CODE = 11222;
     protected static final int REQUEST_FETCH_CODE = 10012;
     protected static final int REQUEST_PERMISSIONS_CODE = 10312;
 
-    private static final String[] CONTACT_FIELDS_PROJECTION;
-    private static final Map<String, String> CONTACT_FIELDS_MAP = new HashMap<String, String>();
+    // Messages
+    public static final String ERROR_READ_CONTACT = "Unable to read contact data.";
+    public static final String ERROR_NO_PERMISSION = "User denied permission";
 
-    static {
-        CONTACT_FIELDS_MAP.put(CommonDataKinds.Phone.DISPLAY_NAME, "displayName");
-        CONTACT_FIELDS_MAP.put(CommonDataKinds.Email.ADDRESS, "emailAddress");
-        CONTACT_FIELDS_PROJECTION = CONTACT_FIELDS_MAP.keySet().toArray(new String[]{});
-    }
+    // Queries
+    public static final String CONTACT_DATA_SELECT_CLAUSE = ContactsContract.Data.LOOKUP_KEY + " = ? AND " + ContactsContract.Data.MIMETYPE + " IN('" + CommonDataKinds.Email.CONTENT_ITEM_TYPE + "', '" + CommonDataKinds.Phone.CONTENT_ITEM_TYPE + "')";
 
     @PluginMethod()
     public void open(PluginCall call) {
@@ -48,8 +46,7 @@ public class ContactPicker extends Plugin {
             return;
         }
         saveCall(call);
-        Intent contactPickerIntent = new Intent(Intent.ACTION_PICK);
-        contactPickerIntent.setType(CommonDataKinds.Email.CONTENT_TYPE);
+        Intent contactPickerIntent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
         startActivityForResult(call, contactPickerIntent, REQUEST_OPEN_CODE);
     }
 
@@ -67,9 +64,9 @@ public class ContactPicker extends Plugin {
             return;
         }
 
-        for (int result: grantResults) {
+        for (int result : grantResults) {
             if (result == PackageManager.PERMISSION_DENIED) {
-                savedCall.error("User denied permission");
+                savedCall.error(ERROR_NO_PERMISSION);
                 return;
             }
         }
@@ -89,41 +86,79 @@ public class ContactPicker extends Plugin {
             return;
         }
         if (requestCode == REQUEST_OPEN_CODE) {
-            Cursor cursor = null;
             try {
-                cursor = getContext().getContentResolver().query(intent.getData(), CONTACT_FIELDS_PROJECTION, null, null, null, null);
-                if (cursor != null && cursor.moveToFirst()) {
-                    JSObject tempContact = new JSObject();
-                    try {
-                        for (Map.Entry<String, String> entry : CONTACT_FIELDS_MAP.entrySet()) {
-                            int columnIndex = cursor.getColumnIndex(entry.getKey());
-                            tempContact.put(entry.getValue(), cursor.getString(columnIndex));
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    JSObject contact = new JSObject();
+                JSObject contact = readContactData(intent, savedCall);
+                savedCall.success(Utils.wrapIntoResult(contact));
+            } catch (IOException e) {
+                savedCall.error(ERROR_READ_CONTACT, e);
+            }
+        }
+    }
 
-                    JSArray emailAddresses = new JSArray();
-                    emailAddresses.put(tempContact.getString("emailAddress"));
+    private JSObject readContactData(Intent intent, PluginCall savedCall) throws IOException {
+        final Map<String, String> projectionMap = getContactProjectionMap();
+        ContentQuery contactQuery = new ContentQuery.Builder()
+            .withUri(intent.getData())
+            .withProjection(projectionMap)
+            .build();
 
-                    String displayName = tempContact.getString("displayName");
-                    contact.put("emailAddresses", emailAddresses);
-                    contact.put("givenName", displayName.split(" ")[0]);
-                    contact.put("familyName", displayName.split(" ")[1]);
+        try (ContentQueryService.VisitableCursorWrapper contactVcw = ContentQueryService.query(getContext(), contactQuery)) {
 
-                    JSObject result = new JSObject();
-                    result.put("value", contact);
-                    savedCall.success(result);
-                }
-            } catch (Exception e) {
+            ContactExtractorVisitor contactExtractor = new ContactExtractorVisitor(projectionMap);
+            contactVcw.accept(contactExtractor);
+            List<JSObject> contacts = contactExtractor.getContacts();
 
-            } finally {
-                if (cursor != null) {
-                    cursor.close();
+            if (contacts.size() == 0) {
+                return null;
+            } else {
+                JSObject chosenContact = contacts.get(0);
+
+                Map<String, String> dataProjectionMap = getContactDataProjectionMap();
+                ContentQuery contactDataQuery = new ContentQuery.Builder()
+                    .withUri(ContactsContract.Data.CONTENT_URI)
+                    .withProjection(dataProjectionMap)
+                    .withSelection(CONTACT_DATA_SELECT_CLAUSE)
+                    .withSelectionArgs(new String[]{chosenContact.getString(PluginContactFields.IDENTIFIER)})
+                    .withSortOrder(ContactsContract.Data.MIMETYPE)
+                    .build();
+
+                try (ContentQueryService.VisitableCursorWrapper dataVcw = ContentQueryService.query(getContext(), contactDataQuery)) {
+
+                    ContactDataExtractorVisitor contactDataExtractor = new ContactDataExtractorVisitor(dataProjectionMap);
+                    dataVcw.accept(contactDataExtractor);
+
+                    return transformContactObject(chosenContact, contactDataExtractor.getEmailAddresses(), contactDataExtractor.getPhoneNumbers());
                 }
             }
         }
+    }
+
+    private JSObject transformContactObject(JSObject tempContact, JSArray emailAddresses, JSArray phoneNumbers) {
+        JSObject contact = new JSObject();
+        contact.put(PluginContactFields.IDENTIFIER, tempContact.getString(PluginContactFields.IDENTIFIER));
+        String displayName = tempContact.getString(PluginContactFields.DISPLAY_NAME);
+        contact.put(PluginContactFields.FULL_NAME, displayName);
+        if (displayName != null && displayName.contains(" ")) {
+            contact.put(PluginContactFields.GIVEN_NAME, displayName.split(" ")[0]);
+            contact.put(PluginContactFields.FAMILY_NAME, displayName.split(" ")[1]);
+        }
+        contact.put(PluginContactFields.EMAIL_ADDRESSES, emailAddresses);
+        contact.put(PluginContactFields.PHONE_NUMBERS, phoneNumbers);
+        return contact;
+    }
+
+    private Map<String, String> getContactProjectionMap() {
+        Map<String, String> contactFieldsMap = new HashMap<>();
+        contactFieldsMap.put(ContactsContract.Contacts.LOOKUP_KEY, PluginContactFields.IDENTIFIER);
+        contactFieldsMap.put(ContactsContract.Contacts.DISPLAY_NAME_PRIMARY, PluginContactFields.DISPLAY_NAME);
+        return contactFieldsMap;
+    }
+
+    private Map<String, String> getContactDataProjectionMap() {
+        Map<String, String> contactFieldsMap = new HashMap<>();
+        contactFieldsMap.put(CommonDataKinds.Email.MIMETYPE, PluginContactFields.MIME_TYPE);
+        contactFieldsMap.put(ContactsContract.Data.DATA1, ContactsContract.Data.DATA1);
+        return contactFieldsMap;
     }
 
 }
