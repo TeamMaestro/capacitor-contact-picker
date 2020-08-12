@@ -11,11 +11,13 @@ export interface ContactPickerPlugin {
     close?(): Promise<void>;
 }
 
-interface Contact {
+export interface Contact {
     identifier?: string;
+    androidContactLookupKey?: string;
     givenName?: string;
     familyName?: string;
     nickname?: string;
+    fullName?: string;
     jobTitle?: string;
     departmentName?: string;
     organizationName?: string;

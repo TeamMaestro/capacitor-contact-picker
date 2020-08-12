@@ -1,3 +1,7 @@
 node_modules
 dist
 .gradle/
+.idea/
+build/
+*.iml
+local.properties

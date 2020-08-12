@@ -118,7 +118,7 @@ public class ContactPicker extends Plugin {
                     .withUri(ContactsContract.Data.CONTENT_URI)
                     .withProjection(dataProjectionMap)
                     .withSelection(CONTACT_DATA_SELECT_CLAUSE)
-                    .withSelectionArgs(new String[]{chosenContact.getString(PluginContactFields.IDENTIFIER)})
+                    .withSelectionArgs(new String[]{chosenContact.getString(PluginContactFields.ANDROID_CONTACT_LOOKUP_KEY)})
                     .withSortOrder(ContactsContract.Data.MIMETYPE)
                     .build();
 
@@ -136,6 +136,7 @@ public class ContactPicker extends Plugin {
     private JSObject transformContactObject(JSObject tempContact, JSArray emailAddresses, JSArray phoneNumbers) {
         JSObject contact = new JSObject();
         contact.put(PluginContactFields.IDENTIFIER, tempContact.getString(PluginContactFields.IDENTIFIER));
+        contact.put(PluginContactFields.ANDROID_CONTACT_LOOKUP_KEY, tempContact.getString(PluginContactFields.ANDROID_CONTACT_LOOKUP_KEY));
         String displayName = tempContact.getString(PluginContactFields.DISPLAY_NAME);
         contact.put(PluginContactFields.FULL_NAME, displayName);
         if (displayName != null && displayName.contains(" ")) {
@@ -149,7 +150,8 @@ public class ContactPicker extends Plugin {
 
     private Map<String, String> getContactProjectionMap() {
         Map<String, String> contactFieldsMap = new HashMap<>();
-        contactFieldsMap.put(ContactsContract.Contacts.LOOKUP_KEY, PluginContactFields.IDENTIFIER);
+        contactFieldsMap.put(ContactsContract.Contacts._ID, PluginContactFields.IDENTIFIER);
+        contactFieldsMap.put(ContactsContract.Contacts.LOOKUP_KEY, PluginContactFields.ANDROID_CONTACT_LOOKUP_KEY);
         contactFieldsMap.put(ContactsContract.Contacts.DISPLAY_NAME_PRIMARY, PluginContactFields.DISPLAY_NAME);
         return contactFieldsMap;
     }
