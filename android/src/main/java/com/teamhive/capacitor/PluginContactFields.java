@@ -9,5 +9,7 @@ public class PluginContactFields {
     public static final String FAMILY_NAME = "familyName";
     public static final String EMAIL_ADDRESSES = "emailAddresses";
     public static final String PHONE_NUMBERS = "phoneNumbers";
+    public static final String PHONE_TYPES = "phoneTypes";
     public static final String MIME_TYPE = "mimeType";
+    public static final String PHOTO_URI = "image";
 }

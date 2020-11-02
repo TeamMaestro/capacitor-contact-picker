@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// import android.util.Log;
+
 @NativePlugin(
     permissions = {Manifest.permission.READ_CONTACTS},
     requestCodes = {
@@ -35,7 +37,7 @@ public class ContactPicker extends Plugin {
     public static final String ERROR_NO_PERMISSION = "User denied permission";
 
     // Queries
-    public static final String CONTACT_DATA_SELECT_CLAUSE = ContactsContract.Data.LOOKUP_KEY + " = ? AND " + ContactsContract.Data.MIMETYPE + " IN('" + CommonDataKinds.Email.CONTENT_ITEM_TYPE + "', '" + CommonDataKinds.Phone.CONTENT_ITEM_TYPE + "')";
+    public static final String CONTACT_DATA_SELECT_CLAUSE = ContactsContract.Data.LOOKUP_KEY + " = ? AND " + ContactsContract.Data.MIMETYPE + " IN('" + CommonDataKinds.Email.CONTENT_ITEM_TYPE + "', '" + CommonDataKinds.Phone.CONTENT_ITEM_TYPE + "')"; //
 
     @PluginMethod()
     public void open(PluginCall call) {
@@ -96,7 +98,7 @@ public class ContactPicker extends Plugin {
     }
 
     private JSObject readContactData(Intent intent, PluginCall savedCall) throws IOException {
-        final Map<String, String> projectionMap = getContactProjectionMap();
+        final Map<String, String> projectionMap = getContactProjectionMap(); ////
         ContentQuery contactQuery = new ContentQuery.Builder()
             .withUri(intent.getData())
             .withProjection(projectionMap)
@@ -113,7 +115,7 @@ public class ContactPicker extends Plugin {
             } else {
                 JSObject chosenContact = contacts.get(0);
 
-                Map<String, String> dataProjectionMap = getContactDataProjectionMap();
+                Map<String, String> dataProjectionMap = getContactDataProjectionMap(); ////////
                 ContentQuery contactDataQuery = new ContentQuery.Builder()
                     .withUri(ContactsContract.Data.CONTENT_URI)
                     .withProjection(dataProjectionMap)
@@ -127,24 +129,29 @@ public class ContactPicker extends Plugin {
                     ContactDataExtractorVisitor contactDataExtractor = new ContactDataExtractorVisitor(dataProjectionMap);
                     dataVcw.accept(contactDataExtractor);
 
-                    return transformContactObject(chosenContact, contactDataExtractor.getEmailAddresses(), contactDataExtractor.getPhoneNumbers());
+                    return transformContactObject(chosenContact, contactDataExtractor.getEmailAddresses(), contactDataExtractor.getPhoneNumbers(), contactDataExtractor.getPhoneTypes());
                 }
             }
         }
     }
 
-    private JSObject transformContactObject(JSObject tempContact, JSArray emailAddresses, JSArray phoneNumbers) {
+    private JSObject transformContactObject(JSObject tempContact, JSArray emailAddresses, JSArray phoneNumbers, JSArray phoneTypes) {
         JSObject contact = new JSObject();
         contact.put(PluginContactFields.IDENTIFIER, tempContact.getString(PluginContactFields.IDENTIFIER));
         contact.put(PluginContactFields.ANDROID_CONTACT_LOOKUP_KEY, tempContact.getString(PluginContactFields.ANDROID_CONTACT_LOOKUP_KEY));
         String displayName = tempContact.getString(PluginContactFields.DISPLAY_NAME);
         contact.put(PluginContactFields.FULL_NAME, displayName);
         if (displayName != null && displayName.contains(" ")) {
+            contact.put(PluginContactFields.DISPLAY_NAME, displayName);
             contact.put(PluginContactFields.GIVEN_NAME, displayName.split(" ")[0]);
             contact.put(PluginContactFields.FAMILY_NAME, displayName.split(" ")[1]);
         }
         contact.put(PluginContactFields.EMAIL_ADDRESSES, emailAddresses);
         contact.put(PluginContactFields.PHONE_NUMBERS, phoneNumbers);
+        contact.put(PluginContactFields.PHONE_TYPES, phoneTypes);
+
+        // contact.put(PluginContactFields.PHOTO_URI, tempContact.getString(PluginContactFields.PHOTO_URI));
+        contact.put(PluginContactFields.PHOTO_URI, tempContact.getString(PluginContactFields.PHOTO_URI));
         return contact;
     }
 
@@ -153,6 +160,10 @@ public class ContactPicker extends Plugin {
         contactFieldsMap.put(ContactsContract.Contacts._ID, PluginContactFields.IDENTIFIER);
         contactFieldsMap.put(ContactsContract.Contacts.LOOKUP_KEY, PluginContactFields.ANDROID_CONTACT_LOOKUP_KEY);
         contactFieldsMap.put(ContactsContract.Contacts.DISPLAY_NAME_PRIMARY, PluginContactFields.DISPLAY_NAME);
+
+         contactFieldsMap.put(ContactsContract.Contacts.PHOTO_URI, PluginContactFields.PHOTO_URI);
+
+//        contactFieldsMap.put(ContactsContract.Contacts.Data.DATA15, PluginContactFields.PHOTO_URI);
         return contactFieldsMap;
     }
 
@@ -160,6 +171,7 @@ public class ContactPicker extends Plugin {
         Map<String, String> contactFieldsMap = new HashMap<>();
         contactFieldsMap.put(CommonDataKinds.Email.MIMETYPE, PluginContactFields.MIME_TYPE);
         contactFieldsMap.put(ContactsContract.Data.DATA1, ContactsContract.Data.DATA1);
+        contactFieldsMap.put(ContactsContract.Data.DATA2, ContactsContract.Data.DATA2);
         return contactFieldsMap;
     }
 
