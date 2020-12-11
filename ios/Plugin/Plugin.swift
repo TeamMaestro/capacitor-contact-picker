@@ -83,10 +83,21 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
             call!.resolve([
                 "value": makeContact(contact)
             ])
+        } else {
+            call!.resolve([
+                "value": "nope"
+            ])
         }
     }
 
     public func contactPickerDidCancel(_ picker: CNContactPickerViewController) {
+        print("closed!")
+        let call = self.bridge.getSavedCall(self.id!)
+        
+        call!.resolve([
+            "value": false
+        ])
+        
         picker.dismiss(animated: true, completion: nil)
     }
 }

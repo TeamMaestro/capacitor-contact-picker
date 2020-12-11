@@ -92,47 +92,57 @@ public class ContactPicker extends Plugin {
                 JSObject contact = readContactData(intent, savedCall);
                 savedCall.success(Utils.wrapIntoResult(contact));
             } catch (IOException e) {
-                savedCall.error(ERROR_READ_CONTACT, e);
+                // savedCall.error(ERROR_READ_CONTACT, e);
+                JSObject result = new JSObject();
+                result.put("value", false);
+                savedCall.success(result);
             }
         }
     }
 
     private JSObject readContactData(Intent intent, PluginCall savedCall) throws IOException {
         final Map<String, String> projectionMap = getContactProjectionMap(); ////
-        ContentQuery contactQuery = new ContentQuery.Builder()
-            .withUri(intent.getData())
-            .withProjection(projectionMap)
-            .build();
 
-        try (ContentQueryService.VisitableCursorWrapper contactVcw = ContentQueryService.query(getContext(), contactQuery)) {
+        try {
+            ContentQuery contactQuery = new ContentQuery.Builder()
+                .withUri(intent.getData())
+                .withProjection(projectionMap)
+                .build();
 
-            ContactExtractorVisitor contactExtractor = new ContactExtractorVisitor(projectionMap);
-            contactVcw.accept(contactExtractor);
-            List<JSObject> contacts = contactExtractor.getContacts();
 
-            if (contacts.size() == 0) {
-                return null;
-            } else {
-                JSObject chosenContact = contacts.get(0);
+            try (ContentQueryService.VisitableCursorWrapper contactVcw = ContentQueryService.query(getContext(), contactQuery)) {
 
-                Map<String, String> dataProjectionMap = getContactDataProjectionMap(); ////////
-                ContentQuery contactDataQuery = new ContentQuery.Builder()
-                    .withUri(ContactsContract.Data.CONTENT_URI)
-                    .withProjection(dataProjectionMap)
-                    .withSelection(CONTACT_DATA_SELECT_CLAUSE)
-                    .withSelectionArgs(new String[]{chosenContact.getString(PluginContactFields.ANDROID_CONTACT_LOOKUP_KEY)})
-                    .withSortOrder(ContactsContract.Data.MIMETYPE)
-                    .build();
+                ContactExtractorVisitor contactExtractor = new ContactExtractorVisitor(projectionMap);
+                contactVcw.accept(contactExtractor);
+                List<JSObject> contacts = contactExtractor.getContacts();
 
-                try (ContentQueryService.VisitableCursorWrapper dataVcw = ContentQueryService.query(getContext(), contactDataQuery)) {
+                if (contacts.size() == 0) {
+                    return null;
+                } else {
+                    JSObject chosenContact = contacts.get(0);
 
-                    ContactDataExtractorVisitor contactDataExtractor = new ContactDataExtractorVisitor(dataProjectionMap);
-                    dataVcw.accept(contactDataExtractor);
+                    Map<String, String> dataProjectionMap = getContactDataProjectionMap(); ////////
+                    ContentQuery contactDataQuery = new ContentQuery.Builder()
+                        .withUri(ContactsContract.Data.CONTENT_URI)
+                        .withProjection(dataProjectionMap)
+                        .withSelection(CONTACT_DATA_SELECT_CLAUSE)
+                        .withSelectionArgs(new String[]{chosenContact.getString(PluginContactFields.ANDROID_CONTACT_LOOKUP_KEY)})
+                        .withSortOrder(ContactsContract.Data.MIMETYPE)
+                        .build();
 
-                    return transformContactObject(chosenContact, contactDataExtractor.getEmailAddresses(), contactDataExtractor.getPhoneNumbers(), contactDataExtractor.getPhoneTypes());
+                    try (ContentQueryService.VisitableCursorWrapper dataVcw = ContentQueryService.query(getContext(), contactDataQuery)) {
+
+                        ContactDataExtractorVisitor contactDataExtractor = new ContactDataExtractorVisitor(dataProjectionMap);
+                        dataVcw.accept(contactDataExtractor);
+
+                        return transformContactObject(chosenContact, contactDataExtractor.getEmailAddresses(), contactDataExtractor.getPhoneNumbers(), contactDataExtractor.getPhoneTypes());
+                    }
                 }
             }
+        }  catch (Exception e) {
+            return null;
         }
+
     }
 
     private JSObject transformContactObject(JSObject tempContact, JSArray emailAddresses, JSArray phoneNumbers, JSArray phoneTypes) {
