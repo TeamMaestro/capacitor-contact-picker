@@ -17,6 +17,3 @@ export class ContactPickerWeb extends WebPlugin implements ContactPickerPlugin {
 const ContactPicker = new ContactPickerWeb();
 
 export { ContactPicker };
-
-import { registerWebPlugin } from '@capacitor/core';
-registerWebPlugin(ContactPicker);

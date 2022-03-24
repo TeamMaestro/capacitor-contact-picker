@@ -1,11 +1,4 @@
-declare module "@capacitor/core" {
-    interface PluginRegistry {
-        ContactPicker: ContactPickerPlugin;
-    }
-}
-
 export interface ContactPickerPlugin {
-
     open?(): Promise<Contact[]>;
 
     close?(): Promise<void>;

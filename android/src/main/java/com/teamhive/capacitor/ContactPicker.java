@@ -17,14 +17,14 @@ import java.util.Map;
 
 // import android.util.Log;
 
-@NativePlugin(
-    permissions = {Manifest.permission.READ_CONTACTS},
-    requestCodes = {
-        ContactPicker.REQUEST_OPEN_CODE,
-        ContactPicker.REQUEST_FETCH_CODE,
-        ContactPicker.REQUEST_PERMISSIONS_CODE
-    }
-)
+@CapacitorPlugin(
+    name= "ContactPicker",
+    permissions={
+        @Permission(strings = {ContactPicker.REQUEST_OPEN_CODE}),
+        @Permission(strings = {ContactPicker.REQUEST_FETCH_CODE}),
+        @Permission(strings = {ContactPicker.REQUEST_PERMISSIONS_CODE}),
+      }
+  )
 public class ContactPicker extends Plugin {
 
     // Request codes

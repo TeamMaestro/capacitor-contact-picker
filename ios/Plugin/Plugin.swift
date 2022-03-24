@@ -16,34 +16,27 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
 
     @objc func open(_ call: CAPPluginCall) {
         id = call.callbackId
-        call.save()
+        call.savedCall(withID: id)
         DispatchQueue.main.async {
             self.vc = CNContactPickerViewController()
             self.vc!.delegate = self
-//            self.bridge.presentVC(self.vc!, animated: true, completion: {
-//                call.success();
-//            })
-            
-//            self.bridge.viewController.present(self.vc!, animated: true, completion: {
-//                call.success();
-//            })
-            
-            self.bridge.viewController.present(self.vc!, animated: true, completion: nil)
-            
+            self.bridge?.presentVC(self.vc!, animated: true, completion: {
+                call.resolve();
+            })
         }
     }
 
     @objc func close(_ call: CAPPluginCall) {
         if vc == nil {
-            call.success()
+            call.resolve()
         }
         DispatchQueue.main.async {
-            self.bridge.dismissVC(animated: true) {
-                call.success()
+            self.bridge?.dismissVC(animated: true) {
+                call.resolve()
             }
         }
     }
-    
+
     func makeContact(_ contact: CNContact) -> JSObject {
         var res = JSObject()
         res["contactId"] = contact.identifier;
@@ -62,24 +55,24 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
             return CNLabeledValue<NSString>.localizedString(forLabel: $0.label ?? "");
         }
 //        res["image"] = UIImage(data: contact.imageData!)?.pngData();
-        
+
         if contact.imageData != nil {
             let image = UIImage(data: contact.imageData!)?.pngData() ?? UIImage(data: contact.imageData!)?.jpegData(compressionQuality: 0);
             res["image"] = image!.base64EncodedString(options: .lineLength64Characters);
         }
-        
+
         return res
     }
 
     // didSelect contacts: [CNContact]
     public func contactPicker(_ picker: CNContactPickerViewController, didSelect contact: CNContact) {
         picker.dismiss(animated: true, completion: nil)
-        let call = self.bridge.getSavedCall(self.id!)
+        let call = self.bridge?.getSavedCall(self.id!)
         if (call != nil) {
 //            var object = JSObject()
 //            object["value"] =  contacts.map { makeContact($0) }
 //            call?.resolve(object);
-            
+
             call!.resolve([
                 "value": makeContact(contact)
             ])
@@ -92,12 +85,12 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
 
     public func contactPickerDidCancel(_ picker: CNContactPickerViewController) {
         print("closed!")
-        let call = self.bridge.getSavedCall(self.id!)
-        
+        let call = self.bridge?.getSavedCall(self.id!)
+
         call!.resolve([
             "value": false
         ])
-        
+
         picker.dismiss(animated: true, completion: nil)
     }
 }
