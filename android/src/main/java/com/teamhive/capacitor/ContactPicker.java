@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.Intent;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds;
+import android.util.Log;
+
 import androidx.activity.result.ActivityResult;
 
 import com.getcapacitor.JSArray;
@@ -62,21 +64,18 @@ public class ContactPicker extends Plugin {
         if (getPermissionState("contacts") == PermissionState.GRANTED) {
             open(call);
         } else {
-            call.reject("Permission is required to access the contacts");
+            call.reject(ERROR_NO_PERMISSION);
         }
     }
 
     @ActivityCallback
     private void activityCallback(PluginCall call, ActivityResult result) {
         try {
-            Intent contactPickerIntent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
-            JSObject contact = readContactData(contactPickerIntent, call);
+            Log.v("File: ", String.valueOf(result));
+            JSObject contact = readContactData(result.getData(), call);
             call.resolve(Utils.wrapIntoResult(contact));
         } catch (IOException e) {
-            // savedCall.error(ERROR_READ_CONTACT, e);
-            JSObject res = new JSObject();
-            res.put("value", false);
-            call.resolve(res);
+            call.reject(ERROR_READ_CONTACT);
         }
     }
 
