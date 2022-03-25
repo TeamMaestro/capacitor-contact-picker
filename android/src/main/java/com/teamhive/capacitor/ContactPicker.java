@@ -2,10 +2,21 @@ package com.teamhive.capacitor;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds;
-import com.getcapacitor.*;
+import androidx.activity.result.ActivityResult;
+
+import com.getcapacitor.JSArray;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
+import com.getcapacitor.annotation.ActivityCallback;
+
 import com.teamhive.capacitor.contentQuery.ContentQuery;
 import com.teamhive.capacitor.contentQuery.ContentQueryService;
 import com.teamhive.capacitor.utils.Utils;
@@ -20,17 +31,10 @@ import java.util.Map;
 @CapacitorPlugin(
     name= "ContactPicker",
     permissions={
-        @Permission(strings = {ContactPicker.REQUEST_OPEN_CODE}),
-        @Permission(strings = {ContactPicker.REQUEST_FETCH_CODE}),
-        @Permission(strings = {ContactPicker.REQUEST_PERMISSIONS_CODE}),
-      }
+        @Permission(strings = {Manifest.permission.READ_CONTACTS}, alias = "contacts"),
+    }
   )
 public class ContactPicker extends Plugin {
-
-    // Request codes
-    protected static final int REQUEST_OPEN_CODE = 11222;
-    protected static final int REQUEST_FETCH_CODE = 10012;
-    protected static final int REQUEST_PERMISSIONS_CODE = 10312;
 
     // Messages
     public static final String ERROR_READ_CONTACT = "Unable to read contact data.";
@@ -41,63 +45,44 @@ public class ContactPicker extends Plugin {
 
     @PluginMethod()
     public void open(PluginCall call) {
-        if (!hasRequiredPermissions()) {
-            saveCall(call);
-            NativePlugin annotation = handle.getPluginAnnotation();
-            pluginRequestPermissions(annotation.permissions(), REQUEST_OPEN_CODE);
+        if (getPermissionState("contacts") != PermissionState.GRANTED) {
+            //saveCall(call);
+            call.setKeepAlive(true);
+            requestPermissionForAlias("contacts", call, "contactsPermsCallback");
             return;
         }
-        saveCall(call);
+        //saveCall(call);
+        call.setKeepAlive(true);
         Intent contactPickerIntent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
-        startActivityForResult(call, contactPickerIntent, REQUEST_OPEN_CODE);
+        startActivityForResult(call, contactPickerIntent, "activityCallback");
+    }
+
+    @PermissionCallback
+    private void contactsPermsCallback(PluginCall call) {
+        if (getPermissionState("contacts") == PermissionState.GRANTED) {
+            open(call);
+        } else {
+            call.reject("Permission is required to access the contacts");
+        }
+    }
+
+    @ActivityCallback
+    private void activityCallback(PluginCall call, ActivityResult result) {
+        try {
+            Intent contactPickerIntent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+            JSObject contact = readContactData(contactPickerIntent, call);
+            call.resolve(Utils.wrapIntoResult(contact));
+        } catch (IOException e) {
+            // savedCall.error(ERROR_READ_CONTACT, e);
+            JSObject res = new JSObject();
+            res.put("value", false);
+            call.resolve(res);
+        }
     }
 
     @PluginMethod()
     public void close(PluginCall call) {
         call.unimplemented();
-    }
-
-    @Override
-    protected void handleRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.handleRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        PluginCall savedCall = getSavedCall();
-        if (savedCall == null) {
-            return;
-        }
-
-        for (int result : grantResults) {
-            if (result == PackageManager.PERMISSION_DENIED) {
-                savedCall.error(ERROR_NO_PERMISSION);
-                return;
-            }
-        }
-
-        switch (requestCode) {
-            case REQUEST_OPEN_CODE:
-                open(savedCall);
-                return;
-        }
-    }
-
-    @Override
-    protected void handleOnActivityResult(int requestCode, int resultCode, Intent intent) {
-        super.handleOnActivityResult(requestCode, resultCode, intent);
-        PluginCall savedCall = getSavedCall();
-        if (savedCall == null) {
-            return;
-        }
-        if (requestCode == REQUEST_OPEN_CODE) {
-            try {
-                JSObject contact = readContactData(intent, savedCall);
-                savedCall.success(Utils.wrapIntoResult(contact));
-            } catch (IOException e) {
-                // savedCall.error(ERROR_READ_CONTACT, e);
-                JSObject result = new JSObject();
-                result.put("value", false);
-                savedCall.success(result);
-            }
-        }
     }
 
     private JSObject readContactData(Intent intent, PluginCall savedCall) throws IOException {

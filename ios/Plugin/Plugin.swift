@@ -16,7 +16,7 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
 
     @objc func open(_ call: CAPPluginCall) {
         id = call.callbackId
-        call.savedCall(withID: id)
+        call.keepAlive = true
         DispatchQueue.main.async {
             self.vc = CNContactPickerViewController()
             self.vc!.delegate = self
