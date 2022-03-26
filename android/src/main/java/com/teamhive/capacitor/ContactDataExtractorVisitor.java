@@ -17,6 +17,8 @@ public class ContactDataExtractorVisitor implements Visitor<Cursor> {
     private JSArray phoneNumbers = new JSArray();
     private JSArray phoneTypes = new JSArray();
     private JSArray emailAddresses = new JSArray();
+    private JSArray postalAddresses = new JSArray();
+    private JSArray postalTypes = new JSArray();
 
     public ContactDataExtractorVisitor(Map<String, String> projectionMap) {
         this.projectionMap = projectionMap;
@@ -49,6 +51,21 @@ public class ContactDataExtractorVisitor implements Visitor<Cursor> {
                     phoneTypes.put("other");
                     break;
             }
+        } else if (ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE.equals(currentMimeType)) {
+            postalAddresses.put(currentDataRecord.getString(ContactsContract.Contacts.Data.DATA1));
+
+            // https://developer.android.com/reference/android/provider/ContactsContract.CommonDataKinds.StructuredPostal
+            switch (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA2)) {
+                case "1":
+                    postalTypes.put("home");
+                    break;
+                case "2":
+                    postalTypes.put("work");
+                    break;
+                default:
+                    postalTypes.put("other");
+                    break;
+            }
         }
     }
 
@@ -59,8 +76,16 @@ public class ContactDataExtractorVisitor implements Visitor<Cursor> {
     public JSArray getPhoneTypes() {
         return phoneTypes;
     }
-    
+
     public JSArray getEmailAddresses() {
         return emailAddresses;
+    }
+
+    public JSArray getPostalAddresses() {
+        return postalAddresses;
+    }
+
+    public JSArray getPostalTypes() {
+        return postalTypes;
     }
 }

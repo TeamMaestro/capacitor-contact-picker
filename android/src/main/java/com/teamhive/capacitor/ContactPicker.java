@@ -43,7 +43,7 @@ public class ContactPicker extends Plugin {
     public static final String ERROR_NO_PERMISSION = "User denied permission";
 
     // Queries
-    public static final String CONTACT_DATA_SELECT_CLAUSE = ContactsContract.Data.LOOKUP_KEY + " = ? AND " + ContactsContract.Data.MIMETYPE + " IN('" + CommonDataKinds.Email.CONTENT_ITEM_TYPE + "', '" + CommonDataKinds.Phone.CONTENT_ITEM_TYPE + "')"; //
+    public static final String CONTACT_DATA_SELECT_CLAUSE = ContactsContract.Data.LOOKUP_KEY + " = ? AND " + ContactsContract.Data.MIMETYPE + " IN('" + CommonDataKinds.Email.CONTENT_ITEM_TYPE + "', '" + CommonDataKinds.Phone.CONTENT_ITEM_TYPE + "', '" + CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE + "')"; //
 
     @PluginMethod()
     public void open(PluginCall call) {
@@ -71,9 +71,9 @@ public class ContactPicker extends Plugin {
     @ActivityCallback
     private void activityCallback(PluginCall call, ActivityResult result) {
         try {
-            Log.v("File: ", String.valueOf(result));
+            //Log.v("File: ", String.valueOf(result));
             JSObject contact = readContactData(result.getData(), call);
-            call.resolve(Utils.wrapIntoResult(contact));
+            call.resolve(contact); // since it is just the contact object and not an array, no need to return the value field but instead just return the selected contact. use contact to replace Utils.wrapIntoResult(contact)
         } catch (IOException e) {
             call.reject(ERROR_READ_CONTACT);
         }
@@ -119,7 +119,7 @@ public class ContactPicker extends Plugin {
                         ContactDataExtractorVisitor contactDataExtractor = new ContactDataExtractorVisitor(dataProjectionMap);
                         dataVcw.accept(contactDataExtractor);
 
-                        return transformContactObject(chosenContact, contactDataExtractor.getEmailAddresses(), contactDataExtractor.getPhoneNumbers(), contactDataExtractor.getPhoneTypes());
+                        return transformContactObject(chosenContact, contactDataExtractor.getEmailAddresses(), contactDataExtractor.getPhoneNumbers(), contactDataExtractor.getPhoneTypes(), contactDataExtractor.getPostalAddresses(), contactDataExtractor.getPostalTypes());
                     }
                 }
             }
@@ -129,7 +129,7 @@ public class ContactPicker extends Plugin {
 
     }
 
-    private JSObject transformContactObject(JSObject tempContact, JSArray emailAddresses, JSArray phoneNumbers, JSArray phoneTypes) {
+    private JSObject transformContactObject(JSObject tempContact, JSArray emailAddresses, JSArray phoneNumbers, JSArray phoneTypes, JSArray postalAddresses, JSArray postalTypes) {
         JSObject contact = new JSObject();
         contact.put(PluginContactFields.IDENTIFIER, tempContact.getString(PluginContactFields.IDENTIFIER));
         contact.put(PluginContactFields.ANDROID_CONTACT_LOOKUP_KEY, tempContact.getString(PluginContactFields.ANDROID_CONTACT_LOOKUP_KEY));
@@ -143,8 +143,8 @@ public class ContactPicker extends Plugin {
         contact.put(PluginContactFields.EMAIL_ADDRESSES, emailAddresses);
         contact.put(PluginContactFields.PHONE_NUMBERS, phoneNumbers);
         contact.put(PluginContactFields.PHONE_TYPES, phoneTypes);
-
-        // contact.put(PluginContactFields.PHOTO_URI, tempContact.getString(PluginContactFields.PHOTO_URI));
+        contact.put(PluginContactFields.POSTAL_ADDRESSES, postalAddresses);
+        contact.put(PluginContactFields.POSTAL_TYPES, postalTypes);
         contact.put(PluginContactFields.PHOTO_URI, tempContact.getString(PluginContactFields.PHOTO_URI));
         return contact;
     }
