@@ -13,6 +13,21 @@ This package allows you to use the native contact picker UI on Android or iOS fo
 npm i git+ssh://git@github.com/calvinckho/capacitor-contact-picker
 ```
 
+### iOS
+
+For iOS you need to set a usage description in your info.plist file. (Privacy Setting)
+Open xCode search for your info.plist file and press the tiny "+". Add the following entry:
+
+```
+Privacy - Contacts Usage Description
+```
+
+Give it a value like:
+
+```
+"We need access to your contacts in order to do something."
+```
+
 ### Android
 Add users permission in `AndroidManifest.xml`:
 ```
@@ -26,19 +41,23 @@ Add users permission in `AndroidManifest.xml`:
 ```ts
 import { ContactPicker } from '@teamhive/capacitor-contact-picker';
 
-const contact: any = await ContactPicker.open();
-console.log("contact", JSON.stringify(contact));
-/* sample result: 
-contact, {
-    "fullName":"Joe Smith",
-    "displayName":"Joe Smith",
-    "givenName":"Joe",
-    "familyName":"Smith",
-    "emailAddresses":["joe@smith.com","joesmith@gmail.com","joesmith@yahoo.com"],
-    "phoneNumbers":["+1 (990) 881-1283","+1 (510) 856-0722","+1 (250) 551-0748","+18009811483"],
-    "phoneNumberLabels":["mobile","other","work","mobile"],
-    "postalAddresses":["1 Market Street, San Francisco, CA 94544","PO 21064 Oakland, CA 94080"],
-    "postalAddressLabels":["home","home"]
-*/
+try {
+    const contact: any = await ContactPicker.open();
+    /* method returns a JSON contact object or undefined if no contact was selected
+    sample contact object:
+    {
+        "fullName":"Joe Smith",
+        "displayName":"Joe Smith",
+        "givenName":"Joe",
+        "familyName":"Smith",
+        "emailAddresses":["joe@smith.com","joesmith@gmail.com","joesmith@yahoo.com"],
+        "phoneNumbers":["+1 (990) 881-1283","+1 (510) 856-0722","+1 (250) 551-0748","+18009811483"],
+        "phoneNumberLabels":["mobile","other","work","mobile"],
+        "postalAddresses":["1 Market Street\nSan Francisco, CA 94544","PO 21064\nOakland, CA 94080"],
+        "postalAddressLabels":["home","home"]
+    }*/
+} catch(err) {
+    // handle method rejection when permission is not granted
+}
 
 ```

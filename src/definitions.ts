@@ -1,6 +1,5 @@
 export interface ContactPickerPlugin {
     open?(): Promise<Contact[]>;
-
     close?(): Promise<void>;
 }
 
