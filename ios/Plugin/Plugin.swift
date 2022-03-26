@@ -48,19 +48,21 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
         res["note"] = contact.note;
         res["emailAddresses"] = contact.emailAddresses.map { $0.value }
         res["phoneNumbers"] = contact.phoneNumbers.map { $0.value.stringValue }
-        res["phoneNumberLabels"] = contact.phoneNumbers.map() {
-            return CNLabeledValue<NSString>.localizedString(forLabel: $0.label ?? "");
+        res["phoneNumberLabels"] = contact.phoneNumbers.map {
+            CNLabeledValue<NSString>.localizedString(forLabel: $0.label ?? "")
         }
-        res["postalAddresses"] = contact.postalAddresses.map { $0.value }
+        res["postalAddresses"] = contact.postalAddresses.map {
+            CNPostalAddressFormatter().string(from: $0.value)
+        }
         res["postalAddressLabels"] = contact.postalAddresses.map() {
-            return CNLabeledValue<NSString>.localizedString(forLabel: $0.label ?? "");
+            CNLabeledValue<NSString>.localizedString(forLabel: $0.label ?? "")
         }
-//        res["image"] = UIImage(data: contact.imageData!)?.pngData();
 
-        if contact.imageData != nil {
+        // temporarily disable returning contact imageData because base64 data overwhelms console log
+        /*if contact.imageData != nil {
             let image = UIImage(data: contact.imageData!)?.pngData() ?? UIImage(data: contact.imageData!)?.jpegData(compressionQuality: 0);
             res["image"] = image!.base64EncodedString(options: .lineLength64Characters);
-        }
+        }*/
 
         return res
     }
@@ -70,11 +72,9 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
         picker.dismiss(animated: true, completion: nil)
         let call = self.bridge?.savedCall(withID: self.id!)
         if (call != nil) {
-//            var object = JSObject()
-//            object["value"] =  contacts.map { makeContact($0) }
-//            call?.resolve(object);
-
-            call!.resolve(makeContact(contact))
+            let contactObj = makeContact(contact) as Dictionary<String, Any>
+            //print("result: " + String(describing: contactObj))
+            call!.resolve(contactObj);
         } else {
             call!.resolve()
         }
@@ -83,9 +83,7 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
     public func contactPickerDidCancel(_ picker: CNContactPickerViewController) {
         print("closed!")
         let call = self.bridge?.savedCall(withID: self.id!)
-
         call!.resolve()
-
         picker.dismiss(animated: true, completion: nil)
     }
 }
