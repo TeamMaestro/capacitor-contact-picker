@@ -15,12 +15,18 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
     var id: String?
 
     @objc func open(_ call: CAPPluginCall) {
-        id = call.callbackId
-        call.keepAlive = true
-        DispatchQueue.main.async {
-            self.vc = CNContactPickerViewController()
-            self.vc!.delegate = self
-            self.bridge?.viewController?.present(self.vc!, animated: true, completion: nil)
+        Permissions.contactPermission { granted in
+            if granted {
+                self.id = call.callbackId
+                call.keepAlive = true
+                DispatchQueue.main.async {
+                    self.vc = CNContactPickerViewController()
+                    self.vc!.delegate = self
+                    self.bridge?.viewController?.present(self.vc!, animated: true, completion: nil)
+                }
+            } else {
+                call.reject("User denied access to contacts")
+            }
         }
     }
 
@@ -85,5 +91,27 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
         let call = self.bridge?.savedCall(withID: self.id!)
         call!.resolve()
         picker.dismiss(animated: true, completion: nil)
+    }
+}
+
+class Permissions {
+    class func contactPermission(completionHandler: @escaping (_ accessGranted: Bool) -> Void) {
+        let contactStore = CNContactStore()
+        switch CNContactStore.authorizationStatus(for: .contacts) {
+        case .authorized:
+            completionHandler(true)
+        case .denied:
+            completionHandler(false)
+        case .restricted, .notDetermined:
+            contactStore.requestAccess(for: .contacts) { granted, _ in
+                if granted {
+                    completionHandler(true)
+                } else {
+                    DispatchQueue.main.async {
+                        completionHandler(false)
+                    }
+                }
+            }
+        }
     }
 }

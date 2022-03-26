@@ -28,6 +28,8 @@ Give it a value like:
 "We need access to your contacts in order to do something."
 ```
 
+Also, on iOS it is a best practice to ask for permission twice. See [here](https://blog.prototypr.io/3-best-practices-for-in-app-permissions-dce7d36544a4). 
+
 ### Android
 Add users permission in `AndroidManifest.xml`:
 ```
