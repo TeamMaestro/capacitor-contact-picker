@@ -10,34 +10,25 @@ This package allows you to use the native contact picker UI on Android or iOS fo
 
 ## Installation
 ```
-yarn add @teamhive/capacitor-contact-picker
-// or
-npm i @teamhive/capacitor-contact-picker
+npm i git+ssh://git@github.com/calvinckho/capacitor-contact-picker
 ```
 
 ### Android
-Register the plugin class in your `MainActivity.java`:
-```java
-import com.teamhive.capacitor.ContactPicker;
-
-public class MainActivity extends BridgeActivity {
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        ...
-        add(ContactPicker.class);
-    }
-}
+Add users permission in `AndroidManifest.xml`:
+```
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+      package="com.mycompany.app">
++     <uses-permission android:name="android.permission.READ_CONTACTS" />
+</manifest>    
 ```
 
-## Usage
+## Capacitor 3 Usage
 ```ts
-import { Plugins } from '@capacitor/core';
-
-const { ContactPicker } = Plugins;
+import { ContactPicker } from '@teamhive/capacitor-contact-picker';
 
 async openPicker() {
-    const res = await ContactPicker.open();
-    // res.value is an array of contacts
+    const contact: any = await ContactPicker.open();
+    console.log("contacts", JSON.stringify(contact));
 }
 
 ```
