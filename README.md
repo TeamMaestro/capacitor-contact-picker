@@ -26,9 +26,19 @@ Add users permission in `AndroidManifest.xml`:
 ```ts
 import { ContactPicker } from '@teamhive/capacitor-contact-picker';
 
-async openPicker() {
-    const contact: any = await ContactPicker.open();
-    console.log("contacts", JSON.stringify(contact));
-}
+const contact: any = await ContactPicker.open();
+console.log("contact", JSON.stringify(contact));
+/* sample result: 
+contact, {
+    "fullName":"Joe Smith",
+    "displayName":"Joe Smith",
+    "givenName":"Joe",
+    "familyName":"Smith",
+    "emailAddresses":["joe@smith.com","joesmith@gmail.com","joesmith@yahoo.com"],
+    "phoneNumbers":["+1 (990) 881-1283","+1 (510) 856-0722","+1 (250) 551-0748","+18009811483"],
+    "phoneNumberLabels":["mobile","other","work","mobile"],
+    "postalAddresses":["1 Market Street, San Francisco, CA 94544","PO 21064 Oakland, CA 94080"],
+    "postalAddressLabels":["home","home"]
+*/
 
 ```
