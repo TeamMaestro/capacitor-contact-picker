@@ -74,20 +74,16 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
     // didSelect contacts: [CNContact]
     public func contactPicker(_ picker: CNContactPickerViewController, didSelect contact: CNContact) {
         picker.dismiss(animated: true, completion: nil)
-        let call = self.bridge?.savedCall(withID: self.id!)
-        if (call != nil) {
-            //print("result: " + String(describing: makeContact(contact)))
-            call!.resolve(makeContact(contact));
-        } else {
-            call!.resolve()
-        }
+        guard let call = self.bridge?.savedCall(withID: self.id!) else { return }
+        //print("result: " + String(describing: makeContact(contact)))
+        call.resolve(makeContact(contact));
     }
 
     public func contactPickerDidCancel(_ picker: CNContactPickerViewController) {
-        print("closed!")
-        let call = self.bridge?.savedCall(withID: self.id!)
-        call!.resolve()
+        //print("closed!")
         picker.dismiss(animated: true, completion: nil)
+        guard let call = self.bridge?.savedCall(withID: self.id!) else { return }
+        call.resolve()
     }
 }
 
