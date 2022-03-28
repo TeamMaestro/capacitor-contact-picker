@@ -2,8 +2,6 @@ import Foundation
 import Capacitor
 import ContactsUI
 
-typealias JSObject = [String:Any]
-
 /**
  * Please read the Capacitor iOS Plugin Development Guide
  * here: https://capacitor.ionicframework.com/docs/plugins/ios
@@ -41,8 +39,8 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
         }
     }
 
-    func makeContact(_ contact: CNContact) -> JSObject {
-        var res = JSObject()
+    func makeContact(_ contact: CNContact) -> Dictionary<String, Any> {
+        var res: [String:Any] = [:]
         res["contactId"] = contact.identifier;
         res["givenName"] = contact.givenName;
         res["familyName"] = contact.familyName;
@@ -78,9 +76,8 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
         picker.dismiss(animated: true, completion: nil)
         let call = self.bridge?.savedCall(withID: self.id!)
         if (call != nil) {
-            let contactObj = makeContact(contact) as Dictionary<String, Any>
-            //print("result: " + String(describing: contactObj))
-            call!.resolve(contactObj);
+            //print("result: " + String(describing: makeContact(contact)))
+            call!.resolve(makeContact(contact));
         } else {
             call!.resolve()
         }
