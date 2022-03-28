@@ -13,10 +13,10 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
     var id: String?
 
     @objc func open(_ call: CAPPluginCall) {
+        self.id = call.callbackId
+        call.keepAlive = true
         Permissions.contactPermission { granted in
             if granted {
-                self.id = call.callbackId
-                call.keepAlive = true
                 DispatchQueue.main.async {
                     self.vc = CNContactPickerViewController()
                     self.vc!.delegate = self
@@ -74,7 +74,10 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
     // didSelect contacts: [CNContact]
     public func contactPicker(_ picker: CNContactPickerViewController, didSelect contact: CNContact) {
         picker.dismiss(animated: true, completion: nil)
-        guard let call = self.bridge?.savedCall(withID: self.id!) else { return }
+        guard let call = self.bridge?.savedCall(withID: self.id!) else {
+            print("call was not loaded correctly")
+            return
+        }
         //print("result: " + String(describing: makeContact(contact)))
         call.resolve(makeContact(contact));
     }
