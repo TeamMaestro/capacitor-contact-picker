@@ -119,7 +119,7 @@ public class ContactPicker extends Plugin {
                         ContactDataExtractorVisitor contactDataExtractor = new ContactDataExtractorVisitor(dataProjectionMap);
                         dataVcw.accept(contactDataExtractor);
 
-                        return transformContactObject(chosenContact, contactDataExtractor.getEmailAddresses(), contactDataExtractor.getPhoneNumbers(), contactDataExtractor.getPhoneTypes(), contactDataExtractor.getPostalAddresses(), contactDataExtractor.getPostalTypes());
+                        return transformContactObject(chosenContact, contactDataExtractor.getEmailAddresses(), contactDataExtractor.getPhoneNumbers(), contactDataExtractor.getPostalAddresses());
                     }
                 }
             }
@@ -129,7 +129,7 @@ public class ContactPicker extends Plugin {
 
     }
 
-    private JSObject transformContactObject(JSObject tempContact, JSArray emailAddresses, JSArray phoneNumbers, JSArray phoneTypes, JSArray postalAddresses, JSArray postalTypes) {
+    private JSObject transformContactObject(JSObject tempContact, JSArray emailAddresses, JSArray phoneNumbers, JSArray postalAddresses) {
         JSObject contact = new JSObject();
         contact.put(PluginContactFields.IDENTIFIER, tempContact.getString(PluginContactFields.IDENTIFIER));
         contact.put(PluginContactFields.ANDROID_CONTACT_LOOKUP_KEY, tempContact.getString(PluginContactFields.ANDROID_CONTACT_LOOKUP_KEY));
@@ -142,10 +142,8 @@ public class ContactPicker extends Plugin {
         }
         contact.put(PluginContactFields.EMAIL_ADDRESSES, emailAddresses);
         contact.put(PluginContactFields.PHONE_NUMBERS, phoneNumbers);
-        contact.put(PluginContactFields.PHONE_TYPES, phoneTypes);
         contact.put(PluginContactFields.POSTAL_ADDRESSES, postalAddresses);
-        contact.put(PluginContactFields.POSTAL_TYPES, postalTypes);
-        contact.put(PluginContactFields.PHOTO_URI, tempContact.getString(PluginContactFields.PHOTO_URI));
+        //contact.put(PluginContactFields.PHOTO_URI, tempContact.getString(PluginContactFields.PHOTO_URI));
         return contact;
     }
 
@@ -166,6 +164,14 @@ public class ContactPicker extends Plugin {
         contactFieldsMap.put(CommonDataKinds.Email.MIMETYPE, PluginContactFields.MIME_TYPE);
         contactFieldsMap.put(ContactsContract.Data.DATA1, ContactsContract.Data.DATA1);
         contactFieldsMap.put(ContactsContract.Data.DATA2, ContactsContract.Data.DATA2);
+        contactFieldsMap.put(ContactsContract.Data.DATA3, ContactsContract.Data.DATA3);
+        contactFieldsMap.put(ContactsContract.Data.DATA4, ContactsContract.Data.DATA4);
+        contactFieldsMap.put(ContactsContract.Data.DATA5, ContactsContract.Data.DATA5);
+        contactFieldsMap.put(ContactsContract.Data.DATA6, ContactsContract.Data.DATA6);
+        contactFieldsMap.put(ContactsContract.Data.DATA7, ContactsContract.Data.DATA7);
+        contactFieldsMap.put(ContactsContract.Data.DATA8, ContactsContract.Data.DATA8);
+        contactFieldsMap.put(ContactsContract.Data.DATA9, ContactsContract.Data.DATA9);
+        contactFieldsMap.put(ContactsContract.Data.DATA10, ContactsContract.Data.DATA10);
         return contactFieldsMap;
     }
 

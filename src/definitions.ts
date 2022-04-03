@@ -6,6 +6,7 @@ export interface ContactPickerPlugin {
 export interface Contact {
     identifier?: string;
     androidContactLookupKey?: string;
+    contactId?: string;
     givenName?: string;
     familyName?: string;
     nickname?: string;
@@ -14,6 +15,7 @@ export interface Contact {
     departmentName?: string;
     organizationName?: string;
     note?: string;
-    phoneNumbers: string[];
-    emailAddresses: string[]
+    phoneNumbers?: any[];
+    emailAddresses?: any[]
+    postalAddresses?: any[]
 }
