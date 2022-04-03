@@ -15,10 +15,8 @@ public class ContactDataExtractorVisitor implements Visitor<Cursor> {
     private Map<String, String> projectionMap;
 
     private JSArray phoneNumbers = new JSArray();
-    private JSArray phoneTypes = new JSArray();
     private JSArray emailAddresses = new JSArray();
     private JSArray postalAddresses = new JSArray();
-    private JSArray postalTypes = new JSArray();
 
     public ContactDataExtractorVisitor(Map<String, String> projectionMap) {
         this.projectionMap = projectionMap;
@@ -29,63 +27,96 @@ public class ContactDataExtractorVisitor implements Visitor<Cursor> {
         JSObject currentDataRecord = ContentQueryService.extractDataFromResultSet(cursor, projectionMap);
         String currentMimeType = currentDataRecord.getString(PluginContactFields.MIME_TYPE);
 
-        Log.v("HELLO", String.valueOf(currentDataRecord));
+        //Log.v("HELLO", String.valueOf(currentDataRecord));
 
         if (ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE.equals(currentMimeType)) {
-            emailAddresses.put(currentDataRecord.getString(ContactsContract.Contacts.Data.DATA1));
-        } else if (ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE.equals(currentMimeType)) {
-            phoneNumbers.put(currentDataRecord.getString(ContactsContract.Contacts.Data.DATA1));
-
-            // https://developer.android.com/reference/android/provider/ContactsContract.CommonDataKinds.Phone
+            JSObject email = new JSObject();
+            if (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA1) != null) {
+                email.put("emailAddress", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA1));
+            }
             switch (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA2)) {
                 case "1":
-                    phoneTypes.put("home");
+                    email.put("type", "home");
                     break;
                 case "2":
-                    phoneTypes.put("mobile");
+                    email.put("type", "mobile");
                     break;
                 case "3":
-                    phoneTypes.put("work");
+                    email.put("type", "work");
                     break;
                 default:
-                    phoneTypes.put("other");
+                    email.put("type", "other");
                     break;
             }
-        } else if (ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE.equals(currentMimeType)) {
-            postalAddresses.put(currentDataRecord.getString(ContactsContract.Contacts.Data.DATA1));
-
-            // https://developer.android.com/reference/android/provider/ContactsContract.CommonDataKinds.StructuredPostal
+            emailAddresses.put(email);
+        } else if (ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE.equals(currentMimeType)) {
+            JSObject phone = new JSObject();
+            // https://developer.android.com/reference/android/provider/ContactsContract.CommonDataKinds.Phone
+            if (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA1) != null) {
+                phone.put("phoneNumber", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA1));
+            }
             switch (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA2)) {
                 case "1":
-                    postalTypes.put("home");
+                    phone.put("type", "home");
                     break;
                 case "2":
-                    postalTypes.put("work");
+                    phone.put("type", "mobile");
+                    break;
+                case "3":
+                    phone.put("type", "work");
                     break;
                 default:
-                    postalTypes.put("other");
+                    phone.put("type", "other");
                     break;
             }
+            phoneNumbers.put(phone);
+        } else if (ContactsContract.CommonDataKinds.StructuredPostal.CONTENT_ITEM_TYPE.equals(currentMimeType)) {
+            JSObject address = new JSObject();
+            // https://developer.android.com/reference/android/provider/ContactsContract.CommonDataKinds.StructuredPostal
+            if (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA1) != null) {
+                address.put("formattedAddress", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA1));
+            }
+            if (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA4) != null) {
+                address.put("street", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA4));
+            }
+            if (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA5) != null) {
+                address.put("pobox", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA5));
+            }
+            if (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA6) != null) {
+                address.put("neighborhood", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA6));
+            }
+            if (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA7) != null) {
+                address.put("city", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA7));
+            }
+            if (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA8) != null) {
+                address.put("state", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA8));
+            }
+            if (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA9) != null) {
+                address.put("postcode", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA9));
+            }
+            if (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA10) != null) {
+                address.put("country", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA10));
+            }
+            switch (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA2)) {
+                case "1":
+                    address.put("type", "home");
+                    break;
+                case "2":
+                    address.put("type", "work");
+                    break;
+                default:
+                    address.put("type", "other");
+                    break;
+            }
+            postalAddresses.put(address);
         }
     }
 
     public JSArray getPhoneNumbers() {
         return phoneNumbers;
     }
-
-    public JSArray getPhoneTypes() {
-        return phoneTypes;
-    }
-
     public JSArray getEmailAddresses() {
         return emailAddresses;
     }
-
-    public JSArray getPostalAddresses() {
-        return postalAddresses;
-    }
-
-    public JSArray getPostalTypes() {
-        return postalTypes;
-    }
+    public JSArray getPostalAddresses() { return postalAddresses; }
 }
