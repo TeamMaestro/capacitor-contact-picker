@@ -125,7 +125,7 @@ public class ContactPicker: CAPPlugin, CNContactPickerDelegate {
             print("call was not loaded correctly")
             return
         }
-        print("result: " + String(describing: contact))
+        //print("result: " + String(describing: contact))
         call.resolve(makeContact(contact));
     }
 
