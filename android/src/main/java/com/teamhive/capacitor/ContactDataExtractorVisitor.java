@@ -92,7 +92,7 @@ public class ContactDataExtractorVisitor implements Visitor<Cursor> {
                 address.put("state", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA8));
             }
             if (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA9) != null) {
-                address.put("postcode", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA9));
+                address.put("postalCode", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA9));
             }
             if (currentDataRecord.getString(ContactsContract.Contacts.Data.DATA10) != null) {
                 address.put("country", currentDataRecord.getString(ContactsContract.Contacts.Data.DATA10));
