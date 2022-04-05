@@ -8,6 +8,7 @@
         "build": "npm run clean && tsc",
         "clean": "rimraf ./dist",
         "watch": "tsc --watch",
+        "prepare": "npm run build",
         "prepublishOnly": "npm run build"
     },
     "author": "Sean Perkins",
@@ -17,10 +18,10 @@
         "@capacitor/core": "latest"
     },
     "devDependencies": {
-        "rimraf": "^3.0.0",
-        "typescript": "^3.2.4",
+        "@capacitor/android": "latest",
         "@capacitor/ios": "latest",
-        "@capacitor/android": "latest"
+        "rimraf": "^3.0.0",
+        "typescript": "^3.2.4"
     },
     "files": [
         "dist/",
